@@ -1,0 +1,54 @@
+  uint8_t k;
+
+  if (nState==1) {
+    if (needUpdate==1) {
+      //myTransfer(0);
+
+      PORTD &= ~_BV(PD7);
+      for (k=0; k<7; k++) {    PORTD |= _BV(PD6);    PORTD &= ~_BV(PD6);  }
+
+      
+      //SPI.transfer(0);
+
+      
+      index = 0;
+      p = stringData;
+      nState = 0;
+      needUpdate = 0;
+      return;
+    }
+
+    //myTransfer(0);
+
+    PORTD &= ~_BV(PD7);
+    for (k=0; k<7; k++) {    PORTD |= _BV(PD6);    PORTD &= ~_BV(PD6);  }
+    
+    //SPI.transfer(0);
+    return;
+  }
+
+  else {
+    register uint16_t command;
+    uint16_t mask;
+    uint8_t b;
+    command = 0x8000 | *p++;
+    //SPI.transfer((command >> 8) & 0xFF);
+    //SPI.transfer(command       & 0xFF);
+
+
+    for (k=0; k<15; k++) {
+      mask = 0x8000 >> k;
+      b = (command & mask) >> (15-k);
+      if (b == 0x01) PORTD |= _BV(PD7); else PORTD &= ~_BV(PD7);
+      PORTD |= _BV(PD6);
+      PORTD &= ~_BV(PD6);
+    }
+
+    
+    //myTransfer( (command >> 8) & 0xFF);
+    //myTransfer(  command       & 0xFF);
+  }
+
+  if (index++ >= LED_COUNT) nState=1;
+  
+  return;
