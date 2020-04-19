@@ -1,0 +1,100 @@
+uint8_t gCurrentPatternNumber = 0; // Index number of which pattern is current
+
+
+uint8_t randomTime = 10;
+
+uint8_t shinePos = 0;
+
+
+CRGB leds[NUM_LEDS];
+
+#define FRAMES_PER_SECOND  120
+
+
+void setup() {
+  //delay(3000); // 3 second delay for recovery
+
+  FastLED.addLeds<UCS1903B, DATA_PIN>(leds, NUM_LEDS);
+
+  SET(DDRB, 0); //MOSI OUTPUT
+  SET(DDRB, 1); //LED_OUT OUTPUT
+  SET(DDRB, 3); //LATCH OUTPUT
+  SET(DDRB, 4); //SCK OUTPUT
+
+  shiftOut16(LEDS_ALL);
+
+  // set master brightness control
+  FastLED.setBrightness(200);
+  //gCurrentPatternNumber = random8(1);
+}
+
+void shiftOut16(uint16_t srData) {
+
+  uint16_t mask = 0x8000;
+
+  CLR(PORTB, 3); //LATCH LOW
+
+  for (int i = 0; i < 16; i++) {
+    if (mask & srData) SET(PORTB, 0); else CLR(PORTB, 0); //16-BIT DATA OUT
+    SET(PORTB, 4); //CLK HIGH
+    CLR(PORTB, 4); //CLK LOW
+    mask = mask >> 1;
+  }
+
+  SET(PORTB, 3); //LATCH HIGH
+}
+
+// List of patterns to cycle through.  Each is defined as a separate function below.
+typedef void (*SimplePatternList[])();
+//SimplePatternList gPatterns = {shine1, shine2, shine3, glittering, rainbow, rainbowWithGlitter, confetti, sinelon, juggleMonochrome, juggle, confetti, bpm };
+SimplePatternList gLowProfilePattern = {shine1, shine3, glittering, rainbow, rainbowWithGlitter, confetti, sinelon, juggleMonochrome, juggle, confetti, bpm };
+//{shine3, shine1, shine2}; //, shine1, shine2, lowProfileGlittering, shine3, lowProfileRainbow, shine2, confetti, shine1, lowProfileSinelon, shine3, juggleMonochrome, shine2, shine1};
+
+uint8_t gHue = 0; // rotating "base color" used by many of the patterns
+uint8_t gHue2 = 0;
+
+void loop()
+{
+//  if (!trial) {
+//    return;
+//  }
+
+  //gPatterns[gCurrentPatternNumber]();
+  gLowProfilePattern[gCurrentPatternNumber]();
+
+  FastLED.show();
+  FastLED.delay(1000 / FRAMES_PER_SECOND);
+
+  // do some periodic updates
+  EVERY_N_MILLISECONDS( 10 ) {
+    gHue++;  // slowly cycle the "base color" through the rainbow
+    gHue2 += 8;
+  }
+
+  EVERY_N_MILLISECONDS( 30 ) {
+    shinePos++;
+    if (shinePos >= NUM_LEDS) shinePos = 0;
+  }
+
+  EVERY_N_SECONDS( 10 ) {
+    nextPattern();  // change patterns periodically
+    shiftOut16(LEDS_ALL);
+    //randomTime = random8(6, 12);
+  }
+
+//  EVERY_N_SECONDS( 600) {
+//    trial = false;
+//    fill_solid(leds, NUM_LEDS, CRGB::White);
+//    FastLED.setBrightness(50);
+//    FastLED.show();
+//  }
+}
+
+#define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
+
+void nextPattern()
+{
+  // add one to the current pattern number, and wrap around at the end
+  gCurrentPatternNumber = (gCurrentPatternNumber + 1) % ARRAY_SIZE( gLowProfilePattern);
+}
+\
