@@ -1,3 +1,7 @@
 VCC 	GND
 MOSI0	MISO0
 SCK	RESET
+
+Something added to PROG PORT
+
+Something more added
